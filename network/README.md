@@ -619,3 +619,19 @@ git push
   configuration and is not automatically recreated by this repository.
 - This is a NOTLINE-inspired educational lab, not an exact reproduction of
   the research system.
+
+## Router forwarding policy
+
+R1 applies a default-deny policy to routed traffic. The allowlist covers user
+access to WEB1 over TCP/80 and TCP/443, user SSH access to SRV1, user SMB
+access to FILES1, and the WEB1 -> APP1 -> DB1 application path. Established
+and related return traffic is allowed; rejected forwarded packets are
+rate-limited and logged with the `R1-FW-DROP` prefix.
+
+Inspect the policy and its counters with:
+
+```bash
+docker exec clab-step2-switch-r1 iptables -nvL FORWARD
+docker exec clab-step2-switch-r1 iptables -nvL R1-FORWARD
+```
+

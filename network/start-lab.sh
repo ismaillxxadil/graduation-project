@@ -22,4 +22,4 @@ sudo ovs-vsctl -- --id=@p get port ovsp_probe \
   -- --id=@m create mirror name=span-sw1 select-all=true output-port=@p \
   -- set bridge sw1 mirrors=@m
   
-echo "=== Lab successfully deployed with active NOTLINE monitoring! ==="
+echo "=== Lab deployed. Wait until pc1/files1 finish installing packages, then run: bash verify-lab.sh ==="

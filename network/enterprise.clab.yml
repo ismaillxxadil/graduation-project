@@ -70,6 +70,7 @@ topology:
       image: alpine:3.21.3
       exec:
         - ip link set eth1 up
+        - ip route del default dev eth0
         - sh -c 'udhcpc -q -t 3 -T 5 -i eth1 >/var/log/udhcpc.log 2>&1 &'
 
     iot2:
@@ -77,6 +78,7 @@ topology:
       image: alpine:3.21.3
       exec:
         - ip link set eth1 up
+        - ip route del default dev eth0
         - sh -c 'udhcpc -q -t 3 -T 5 -i eth1 >/var/log/udhcpc.log 2>&1 &'
 
     pc1:

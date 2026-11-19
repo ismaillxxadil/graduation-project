@@ -3,8 +3,8 @@
 set -e
 
 echo "=== 1. Rebuilding Containerlab ==="
-sudo containerlab destroy -t step2.clab.yml -c
-sudo containerlab deploy -t step2.clab.yml
+sudo containerlab destroy -t enterprise.clab.yml -c
+sudo containerlab deploy -t enterprise.clab.yml
 
 echo "=== 2. Applying VLAN Configuration ==="
 bash config/vlan-config.sh

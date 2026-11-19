@@ -109,67 +109,67 @@ Alpine installs service packages.
 List containers:
 
 ```bash
-docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}' | grep clab-step2-switch
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}' --filter label=containerlab=enterprise
 ```
 
 Check client addresses and routes:
 
 ```bash
-docker exec clab-step2-switch-pc1 ip -4 addr show eth1
-docker exec clab-step2-switch-pc2 ip -4 addr show eth1
-docker exec clab-step2-switch-iot1 ip -4 addr show eth1
-docker exec clab-step2-switch-iot2 ip -4 addr show eth1
-docker exec clab-step2-switch-pc1 ip route
+docker exec pc1 ip -4 addr show eth1
+docker exec pc2 ip -4 addr show eth1
+docker exec iot1 ip -4 addr show eth1
+docker exec iot2 ip -4 addr show eth1
+docker exec pc1 ip route
 ```
 
 Check DNS:
 
 ```bash
-docker exec clab-step2-switch-pc1 nslookup frontend.enterprise.local
-docker exec clab-step2-switch-pc1 nslookup app.enterprise.local
-docker exec clab-step2-switch-pc1 nslookup db.enterprise.local
+docker exec pc1 nslookup frontend.enterprise.local
+docker exec pc1 nslookup app.enterprise.local
+docker exec pc1 nslookup db.enterprise.local
 ```
 
 Test the application chain:
 
 ```bash
-docker exec clab-step2-switch-pc1 wget -T 5 -qO- http://frontend.enterprise.local/
-docker exec clab-step2-switch-pc1 wget -T 5 -qO- \
+docker exec pc1 wget -T 5 -qO- http://frontend.enterprise.local/
+docker exec pc1 wget -T 5 -qO- \
   'http://frontend.enterprise.local/api/users/search?name=appuser'
 ```
 
 Test SSH:
 
 ```bash
-docker exec -it clab-step2-switch-pc1 ssh labuser@10.10.35.10
+docker exec -it pc1 ssh labuser@10.10.35.10
 ```
 
 Test the Samba server:
 
 ```bash
-docker exec clab-step2-switch-pc1 apk add --no-cache samba-client
-docker exec clab-step2-switch-pc1 smbclient -N //10.10.35.40/shared -c 'ls'
+docker exec pc1 apk add --no-cache samba-client
+docker exec pc1 smbclient -N //10.10.35.40/shared -c 'ls'
 ```
 
 Inspect Samba logs and processes:
 
 ```bash
-docker exec clab-step2-switch-files1 ps
-docker logs clab-step2-switch-files1
+docker exec files1 ps
+docker logs files1
 ```
 
 Capture user-side traffic on probe2:
 
 ```bash
-docker exec clab-step2-switch-probe2 tcpdump -ni eth1 -c 10
-docker exec clab-step2-switch-pc1 ping -c 3 10.10.10.1
+docker exec probe2 tcpdump -ni eth1 -c 10
+docker exec pc1 ping -c 3 10.10.10.1
 ```
 
 Capture server-side traffic on probe1:
 
 ```bash
-docker exec clab-step2-switch-probe1 tcpdump -ni eth1 -c 10
-docker exec clab-step2-switch-pc1 wget -T 5 -qO- http://frontend.enterprise.local/
+docker exec probe1 tcpdump -ni eth1 -c 10
+docker exec pc1 wget -T 5 -qO- http://frontend.enterprise.local/
 ```
 
 Inspect both OVS mirrors:
@@ -192,15 +192,15 @@ ls -lh probe2-logs/
 If a client has no address, inspect its DHCP log:
 
 ```bash
-docker exec clab-step2-switch-pc1 cat /var/log/udhcpc.log
-docker exec clab-step2-switch-iot1 cat /var/log/udhcpc.log
+docker exec pc1 cat /var/log/udhcpc.log
+docker exec iot1 cat /var/log/udhcpc.log
 ```
 
 If DNS fails, verify the resolver and query the lab DNS directly:
 
 ```bash
-docker exec clab-step2-switch-pc1 cat /etc/resolv.conf
-docker exec clab-step2-switch-pc1 nslookup app.enterprise.local 10.10.10.2
+docker exec pc1 cat /etc/resolv.conf
+docker exec pc1 nslookup app.enterprise.local 10.10.10.2
 ```
 
 If a mirror is empty, start tcpdump before generating traffic and verify the

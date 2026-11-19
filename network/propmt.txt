@@ -76,13 +76,13 @@ I want to work primarily from VS Code and its terminal.
 My project directory is currently:
 
 ```text
-~/enterprise-lab/step2-switch
+~/GP/implmentation/network
 ```
 
 The main Containerlab topology file is:
 
 ```text
-step2.clab.yml
+enterprise.clab.yml
 ```
 
 I want to continue modifying this existing topology rather than destroying it and starting from zero every time.
@@ -92,13 +92,13 @@ Use Containerlab's reconciliation/deploy capabilities when possible.
 Before making topology changes, prefer:
 
 ```bash
-sudo containerlab deploy --dry-run -t step2.clab.yml
+sudo containerlab deploy --dry-run -t enterprise.clab.yml
 ```
 
 Then, if the expected changes are correct:
 
 ```bash
-sudo containerlab deploy -t step2.clab.yml
+sudo containerlab deploy -t enterprise.clab.yml
 ```
 
 Do NOT unnecessarily use destructive redeploy/destroy operations.
@@ -483,7 +483,7 @@ works.
 For example:
 
 ```bash
-docker exec clab-step2-switch-pc1 wget -qO- http://10.10.20.20
+docker exec pc1 wget -qO- http://10.10.20.20
 ```
 
 works.
@@ -536,7 +536,7 @@ POSTGRES_DB=enterprise_db
 We verified:
 
 ```bash
-docker exec clab-step2-switch-db1 pg_isready
+docker exec db1 pg_isready
 ```
 
 works.
@@ -1161,7 +1161,7 @@ Use exact commands.
 
 When editing YAML, show the relevant section and clearly explain what changed.
 
-Do not repeatedly recreate the entdocker exec clab-step2-switch-r1 vtysh -c 'show ip route'ire topology file unless necessary.
+Do not repeatedly recreate the entdocker exec r1 vtysh -c 'show ip route'ire topology file unless necessary.
 
 Do not destroy the lab unless there is a genuine technical reason.
 

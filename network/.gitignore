@@ -9,11 +9,11 @@ probe2-logs/*
 app1/node_modules/
 
 # Containerlab generated state
-clab-step2-switch/.state.clab.yaml
-clab-step2-switch/topology-data.json
-clab-step2-switch/ansible-inventory.yml
-clab-step2-switch/nornir-simple-inventory.yml
-step2.clab.yml.annotations.json
+clab-enterprise/.state.clab.yaml
+clab-enterprise/topology-data.json
+clab-enterprise/ansible-inventory.yml
+clab-enterprise/nornir-simple-inventory.yml
+enterprise.clab.yml.annotations.json
 
 # Local/editor/system files
 .DS_Store

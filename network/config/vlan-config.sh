@@ -36,7 +36,7 @@ sudo ovs-vsctl set port ovs2p10 tag=40
 
 echo "Renewing DHCP clients after VLAN tags are applied..."
 for node in pc1 pc2 iot1 iot2; do
-    container="clab-step2-switch-${node}"
+    container="${node}"
     docker exec "$container" sh -c '
         killall udhcpc 2>/dev/null || true
         ip addr flush dev eth1

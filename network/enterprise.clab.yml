@@ -1,4 +1,5 @@
-name: step2-switch
+name: enterprise
+prefix: ""
 
 topology:
   nodes:

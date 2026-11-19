@@ -35,7 +35,7 @@ machine.
 
 | Path | Purpose |
 | --- | --- |
-| `step2.clab.yml` | Containerlab topology |
+| `enterprise.clab.yml` | Containerlab topology |
 | `config/vlan-config.sh` | Applies OVS access-port VLAN tags |
 | `r1/` | FRRouting configuration |
 | `web1/` | Nginx image and static HTML |
@@ -159,7 +159,7 @@ If you are running the project from the local directory instead of cloning it,
 use:
 
 ```bash
-cd /home/ismail/enterprise-lab/step2-switch
+cd ~/GP/implmentation/network
 ```
 
 ## Complete first-run procedure
@@ -172,8 +172,8 @@ docker build -t enterprise-web:2.0 ./web1
 docker build -t enterprise-app:1.0 ./app1
 sudo ovs-vsctl --may-exist add-br sw1
 sudo ovs-vsctl --may-exist add-br sw2
-sudo containerlab deploy --dry-run -t step2.clab.yml
-sudo containerlab deploy -t step2.clab.yml
+sudo containerlab deploy --dry-run -t enterprise.clab.yml
+sudo containerlab deploy -t enterprise.clab.yml
 bash config/vlan-config.sh
 ```
 
@@ -231,13 +231,13 @@ sw2
 Always validate before changing the running lab:
 
 ```bash
-sudo containerlab deploy --dry-run -t step2.clab.yml
+sudo containerlab deploy --dry-run -t enterprise.clab.yml
 ```
 
 Deploy:
 
 ```bash
-sudo containerlab deploy -t step2.clab.yml
+sudo containerlab deploy -t enterprise.clab.yml
 ```
 
 Apply the VLAN access-port configuration after deployment, because the
@@ -258,20 +258,20 @@ Check the running nodes:
 
 ```bash
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}' \
-  | grep clab-step2-switch
+  --filter label=containerlab=enterprise
 ```
 
 Expected nodes include:
 
 ```text
-clab-step2-switch-r1
-clab-step2-switch-probe1
-clab-step2-switch-pc1
-clab-step2-switch-pc2
-clab-step2-switch-srv1
-clab-step2-switch-web1
-clab-step2-switch-app1
-clab-step2-switch-db1
+r1
+probe1
+pc1
+pc2
+srv1
+web1
+app1
+db1
 ```
 
 `sw1` and `sw2` are host Open vSwitch bridges, not Docker containers. Verify
@@ -298,7 +298,7 @@ SRV1 runs OpenSSH with the lab account `labuser` and password
 receives its DHCP address, connect to SRV1 with:
 
 ```bash
-docker exec -it clab-step2-switch-pc1 ssh labuser@10.10.35.10
+docker exec -it pc1 ssh labuser@10.10.35.10
 ```
 
 ## Verify OVS VLAN tags
@@ -342,9 +342,9 @@ Check that the probe is running and has its capture interface:
 
 ```bash
 docker ps --format 'table {{.Names}}\t{{.Status}}' \
-  | grep clab-step2-switch-probe1
-docker exec clab-step2-switch-probe1 ip link show eth1
-docker exec clab-step2-switch-probe1 command -v tcpdump
+  | grep probe1
+docker exec probe1 ip link show eth1
+docker exec probe1 command -v tcpdump
 ```
 
 Inspect the host OVS mirror objects. These commands require permission to read
@@ -359,14 +359,14 @@ sudo ovs-vsctl --columns=name,ports,mirrors list bridge sw2
 Generate traffic and capture it on the probe:
 
 ```bash
-docker exec clab-step2-switch-probe1 \
+docker exec probe1 \
   sh -c 'timeout 10 tcpdump -ni eth1 -c 5'
 ```
 
 While the capture is running, use another terminal to generate traffic:
 
 ```bash
-docker exec clab-step2-switch-pc1 ping -c 2 10.10.20.20
+docker exec pc1 ping -c 2 10.10.20.20
 ```
 
 The capture should show mirrored Ethernet frames, such as ARP, ICMP, or TCP
@@ -381,7 +381,7 @@ Capture on `probe1:eth1`, not only on the host-side OVS port name
 container, where `eth1` is the reliable capture interface:
 
 ```bash
-docker exec clab-step2-switch-probe1 tcpdump -ni eth1 -c 10
+docker exec probe1 tcpdump -ni eth1 -c 10
 ```
 
 The startup script clears stale mirror objects before creating a mirror for
@@ -392,24 +392,24 @@ the newly created probe port. Rerun `./start-lab.sh` after restarting the lab.
 Check the configured addresses:
 
 ```bash
-docker exec clab-step2-switch-pc1 ip -4 addr show dev eth1
-docker exec clab-step2-switch-pc2 ip -4 addr show dev eth1
-docker exec clab-step2-switch-iot1 ip -4 addr show dev eth1
-docker exec clab-step2-switch-srv1 ip -4 addr show dev eth1
-docker exec clab-step2-switch-web1 ip -4 addr show dev eth1
-docker exec clab-step2-switch-app1 ip -4 addr show dev eth1
-docker exec clab-step2-switch-db1 ip -4 addr show dev eth1
+docker exec pc1 ip -4 addr show dev eth1
+docker exec pc2 ip -4 addr show dev eth1
+docker exec iot1 ip -4 addr show dev eth1
+docker exec srv1 ip -4 addr show dev eth1
+docker exec web1 ip -4 addr show dev eth1
+docker exec app1 ip -4 addr show dev eth1
+docker exec db1 ip -4 addr show dev eth1
 ```
 
 Test the main network path from PC1:
 
 ```bash
-docker exec clab-step2-switch-pc1 ping -c 3 10.10.10.1
-docker exec clab-step2-switch-pc1 ping -c 3 10.10.10.20
-docker exec clab-step2-switch-pc1 ping -c 3 10.10.35.10
-docker exec clab-step2-switch-pc1 ping -c 3 10.10.20.20
-docker exec clab-step2-switch-pc1 ping -c 3 10.10.25.30
-docker exec clab-step2-switch-pc1 ping -c 3 10.10.30.10
+docker exec pc1 ping -c 3 10.10.10.1
+docker exec pc1 ping -c 3 10.10.10.20
+docker exec pc1 ping -c 3 10.10.35.10
+docker exec pc1 ping -c 3 10.10.20.20
+docker exec pc1 ping -c 3 10.10.25.30
+docker exec pc1 ping -c 3 10.10.30.10
 ```
 
 ## Verify the application chain
@@ -417,7 +417,7 @@ docker exec clab-step2-switch-pc1 ping -c 3 10.10.30.10
 ### WEB1 static HTML
 
 ```bash
-docker exec clab-step2-switch-pc1 \
+docker exec pc1 \
   wget -qO- http://10.10.20.20/
 ```
 
@@ -426,7 +426,7 @@ The response should contain `Enterprise Web Server - WEB1`.
 ### APP1 directly
 
 ```bash
-docker exec clab-step2-switch-pc1 \
+docker exec pc1 \
   wget -qO- http://10.10.25.30:3000/api/health
 ```
 
@@ -439,7 +439,7 @@ Expected response:
 ### WEB1 reverse proxy to APP1
 
 ```bash
-docker exec clab-step2-switch-pc1 \
+docker exec pc1 \
   wget -qO- http://10.10.20.20/api/health
 ```
 
@@ -451,21 +451,21 @@ This request reaches Nginx on WEB1 and is forwarded to APP1 because of the
 Check PostgreSQL:
 
 ```bash
-docker exec clab-step2-switch-db1 \
+docker exec db1 \
   pg_isready -U appuser -d enterprise_db
 ```
 
 The application database-backed endpoint can be tested directly:
 
 ```bash
-docker exec clab-step2-switch-pc1 \
+docker exec pc1 \
   wget -qO- 'http://10.10.25.30:3000/api/users/search?name=appuser'
 ```
 
 ### Full WEB1 -> APP1 -> DB1 request
 
 ```bash
-docker exec clab-step2-switch-pc1 \
+docker exec pc1 \
   wget -qO- 'http://10.10.20.20/api/users/search?name=appuser'
 ```
 
@@ -480,22 +480,22 @@ reuse the endpoint in production.
 Containerlab status:
 
 ```bash
-sudo containerlab inspect -t step2.clab.yml
+sudo containerlab inspect -t enterprise.clab.yml
 ```
 
 Container logs:
 
 ```bash
-docker logs --tail 100 clab-step2-switch-web1
-docker logs --tail 100 clab-step2-switch-app1
-docker logs --tail 100 clab-step2-switch-db1
+docker logs --tail 100 web1
+docker logs --tail 100 app1
+docker logs --tail 100 db1
 ```
 
 Router interfaces and routes:
 
 ```bash
-docker exec clab-step2-switch-r1 ip -4 addr
-docker exec clab-step2-switch-r1 vtysh -c 'show ip route'
+docker exec r1 ip -4 addr
+docker exec r1 vtysh -c 'show ip route'
 ```
 
 OVS state:
@@ -510,7 +510,7 @@ If a previous deployment is stuck or the topology has to be removed, use the
 destructive command deliberately:
 
 ```bash
-sudo containerlab destroy -t step2.clab.yml
+sudo containerlab destroy -t enterprise.clab.yml
 ```
 
 After destroying the lab, redeploy it and reapply the VLAN script.
@@ -520,7 +520,7 @@ After destroying the lab, redeploy it and reapply the VLAN script.
 The topology bind-mounts `./db1/data` into the PostgreSQL container. This
 directory is machine-local lab state and is ignored by Git. A fresh clone
 starts with an empty database directory and PostgreSQL initializes it using
-the credentials in `step2.clab.yml`.
+the credentials in `enterprise.clab.yml`.
 
 On a fresh clone, create the bind-mount directory before deployment:
 
@@ -533,10 +533,10 @@ reset the database, first destroy the topology, then remove only the local
 database directory and redeploy:
 
 ```bash
-sudo containerlab destroy -t step2.clab.yml
+sudo containerlab destroy -t enterprise.clab.yml
 rm -rf db1/data
 mkdir -p db1/data
-sudo containerlab deploy -t step2.clab.yml
+sudo containerlab deploy -t enterprise.clab.yml
 bash config/vlan-config.sh
 ```
 
@@ -558,11 +558,11 @@ On GitHub:
 Run these commands from the project directory:
 
 ```bash
-cd /home/ismail/enterprise-lab/step2-switch
+cd ~/GP/implmentation/network
 git init
 git branch -M main
 git status
-git add README.md .gitignore step2.clab.yml config r1 web1 app1 \
+git add README.md .gitignore enterprise.clab.yml config r1 web1 app1 \
   commands.txt propmt.txt
 git commit -m "Add enterprise Containerlab topology"
 ```
@@ -602,7 +602,7 @@ the first push.
 ### 4. Future updates
 
 ```bash
-git add README.md step2.clab.yml config r1 web1 app1 commands.txt propmt.txt
+git add README.md enterprise.clab.yml config r1 web1 app1 commands.txt propmt.txt
 git commit -m "Describe the change"
 git push
 ```
@@ -631,7 +631,7 @@ rate-limited and logged with the `R1-FW-DROP` prefix.
 Inspect the policy and its counters with:
 
 ```bash
-docker exec clab-step2-switch-r1 iptables -nvL FORWARD
-docker exec clab-step2-switch-r1 iptables -nvL R1-FORWARD
+docker exec r1 iptables -nvL FORWARD
+docker exec r1 iptables -nvL R1-FORWARD
 ```
 

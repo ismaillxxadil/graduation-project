@@ -1,0 +1,29 @@
+# Normal working period: busy and normal users, one quiet IoT device, one rare one,
+# plus two deliberate attempts the firewall must block.
+scenario: baseline
+seed: 42
+duration_s: 1800            # 30 minutes
+
+tiers:                      # average events per hour (random Poisson timing)
+  busy: 120
+  normal: 40
+  quiet: 3
+  rare: 1
+
+hosts:
+  pc1:                      # power user: has ssh + smbclient installed
+    tier: busy
+    activities: { http_home: 4, http_api: 3, http_search: 1, dns_lookup: 3, smb_list: 1, ssh_handshake: 1 }
+  pc2:                      # web-only user (only BusyBox tools)
+    tier: normal
+    activities: { http_home: 3, http_api: 2, dns_lookup: 2 }
+  iot1:                     # isolated IoT VLAN: can only reach dhcp1
+    tier: quiet
+    activities: { dns_lookup: 2, dhcp_renew: 1 }
+  iot2:
+    tier: rare
+    activities: { dhcp_renew: 1 }
+
+blocked_attempts:           # fixed times; firewall must drop these
+  - { at_s: 600,  src: pc1, dst: db1,  port: 5432 }
+  - { at_s: 1200, src: pc2, dst: app1, port: 3000 }

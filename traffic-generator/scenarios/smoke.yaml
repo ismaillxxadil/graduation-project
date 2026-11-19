@@ -1,0 +1,20 @@
+# 3-minute quick test that touches every activity. Use it after changing the lab.
+scenario: smoke
+seed: 1                     # chosen so every activity appears at least once
+duration_s: 180
+
+hosts:
+  pc1:
+    events_per_hour: 600    # ~30 actions in 3 minutes
+    activities: { http_home: 2, http_api: 2, http_search: 1, dns_lookup: 2, smb_list: 1, ssh_handshake: 1 }
+  pc2:
+    events_per_hour: 300
+    activities: { http_home: 1, http_api: 1, dns_lookup: 1 }
+  iot1:
+    events_per_hour: 120
+    activities: { dns_lookup: 1, dhcp_renew: 1 }
+
+blocked_attempts:
+  - { at_s: 30,  src: pc1, dst: db1,  port: 5432 }
+  - { at_s: 60,  src: pc2, dst: app1, port: 3000 }
+  - { at_s: 90,  src: pc1, dst: srv1, port: 23 }

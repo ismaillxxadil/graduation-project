@@ -1,0 +1,16 @@
+# Discovery-limits experiment: pc2 and iot2 are almost silent for a whole hour.
+# Module 11 uses this to measure how long passive discovery takes to notice them.
+scenario: quiet-host
+seed: 1001
+duration_s: 3600
+
+hosts:
+  pc1:
+    events_per_hour: 90
+    activities: { http_home: 3, http_api: 2, dns_lookup: 2 }
+  pc2:
+    events_per_hour: 2
+    activities: { http_home: 1 }
+  iot2:
+    events_per_hour: 1
+    activities: { dhcp_renew: 1 }

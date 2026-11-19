@@ -19,3 +19,6 @@ enterprise.clab.yml.annotations.json
 .DS_Store
 .vscode/
 *.swp
+
+# Zeek output (regenerated every run)
+probe-logs/

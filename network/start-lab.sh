@@ -2,6 +2,9 @@
 
 set -e
 
+echo "=== 0. Creating bind folders ==="
+mkdir -p probe-logs probe2-logs db1/data
+
 echo "=== 1. Rebuilding Containerlab ==="
 sudo containerlab destroy -t enterprise.clab.yml -c
 sudo containerlab deploy -t enterprise.clab.yml

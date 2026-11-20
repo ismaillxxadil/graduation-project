@@ -1,0 +1,6 @@
+# Local research (not published)
+reports/
+research_notes/
+
+# PDFs live outside the repo (~/GP/module)
+*.pdf

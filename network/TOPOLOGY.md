@@ -107,8 +107,9 @@ Open a shell in any container with `docker exec -it <name> sh`. Use `bash` for t
 
 ### probe1: Zeek sensor on sw2
 - **Role:** passive monitor for the server side (VLANs 20/25/30/35/40). It has no IP on `eth1` and never sends traffic.
-- **Image:** `zeek/zeek:7.0.5`. It runs `zeek -i eth1 LogAscii::use_json=T`.
+- **Image:** `zeek/zeek:7.0.5`. It is started by `config/start-zeek.sh`, which runs `zeek -i eth1 LogAscii::use_json=T`.
 - **Output:** JSON logs in `/opt/zeek/logs`. On the host, these appear in `./probe-logs/`.
+- **Restarts:** Zeek empties its log files when it starts. So before starting, `start-zeek.sh` moves the previous run's logs into `probe-logs/archive/<unix-time>/`. Nothing is lost, and Module 4 reads the archive too.
 - **Note:** `tcpdump` and `ip` are **not** installed in this image.
 - **Try:**
   ```bash
@@ -119,7 +120,7 @@ Open a shell in any container with `docker exec -it <name> sh`. Use `bash` for t
 ### probe2: Zeek sensor on sw1
 - **Role:** passive monitor for the user side (VLAN 10).
 - **Image:** `zeek/zeek:7.0.5`, set up the same way as probe1.
-- **Output:** `./probe2-logs/` on the host.
+- **Output:** `./probe2-logs/` on the host (old runs in `./probe2-logs/archive/`).
 - **Try:**
   ```bash
   ls -lh probe2-logs/

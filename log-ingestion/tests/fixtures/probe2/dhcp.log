@@ -1,0 +1,2 @@
+{"ts":1795114706.972834,"uids":["CPPgumszOgeKC08wi"],"mac":"aa:c1:ab:a9:25:28","msg_types":["DISCOVER"],"duration":0.0}
+{"ts":1795114730.012909,"uids":["CPPgumszOgeKC08wi"],"mac":"aa:c1:ab:a9:25:28","requested_addr":"10.10.10.133","msg_types":["DISCOVER","REQUEST"],"duration":2.5707781314849854}

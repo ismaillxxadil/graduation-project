@@ -29,18 +29,22 @@ topology:
       image: zeek/zeek:7.0.5
       binds:
         - ./probe-logs:/opt/zeek/logs
+        - ./config/start-zeek.sh:/start-zeek.sh:ro
       exec:
         - ip link set eth1 up
-        - sh -c 'cd /opt/zeek/logs && zeek -i eth1 LogAscii::use_json=T &'
+        # archives the previous run's logs, then starts Zeek (see config/start-zeek.sh)
+        - sh /start-zeek.sh
 
     probe2:
       kind: linux
       image: zeek/zeek:7.0.5
       binds:
         - ./probe2-logs:/opt/zeek/logs
+        - ./config/start-zeek.sh:/start-zeek.sh:ro
       exec:
         - ip link set eth1 up
-        - sh -c 'cd /opt/zeek/logs && zeek -i eth1 LogAscii::use_json=T &'
+        # archives the previous run's logs, then starts Zeek (see config/start-zeek.sh)
+        - sh /start-zeek.sh
 
     dhcp1:
       kind: linux

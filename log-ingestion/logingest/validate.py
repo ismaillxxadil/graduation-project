@@ -15,6 +15,7 @@ from .normalize import Normalized
 REQUIRED_DATA = {
     "conn": ("zeek_uid", "src_ip", "dst_ip", "transport"),
     "dhcp": ("source_uids", "message_types"),
+    "software": ("host_ip",),
 }
 
 

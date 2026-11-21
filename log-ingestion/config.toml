@@ -16,6 +16,11 @@ log_type = "dhcp"
 path = "../network/probe-logs/dhcp.log"
 
 [[sources]]
+probe_id = "probe1"
+log_type = "software"
+path = "../network/probe-logs/software.log"
+
+[[sources]]
 probe_id = "probe2"            # Zeek on sw1
 log_type = "conn"
 path = "../network/probe2-logs/conn.log"
@@ -24,6 +29,11 @@ path = "../network/probe2-logs/conn.log"
 probe_id = "probe2"
 log_type = "dhcp"
 path = "../network/probe2-logs/dhcp.log"
+
+[[sources]]
+probe_id = "probe2"
+log_type = "software"
+path = "../network/probe2-logs/software.log"
 
 # include_archive = true (default): also read <log dir>/archive/<run>/<name>,
 # the copies the probe start script moves aside before Zeek restarts.

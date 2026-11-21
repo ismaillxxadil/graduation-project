@@ -6,7 +6,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-LOG_TYPES = ("conn", "dhcp")
+LOG_TYPES = ("conn", "dhcp", "software")
 
 
 class ConfigError(Exception):

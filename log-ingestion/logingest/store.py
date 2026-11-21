@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS observations (
     source_id       TEXT NOT NULL REFERENCES file_offsets(source_id),
     probe_id        TEXT NOT NULL,
     log_type        TEXT NOT NULL,
-    event_type      TEXT NOT NULL,                       -- network_connection | dhcp_observation
+    event_type      TEXT NOT NULL,                       -- network_connection | dhcp_observation | software_observation
     schema_version  INTEGER NOT NULL,
     observed_at_us  INTEGER NOT NULL,                    -- Zeek ts in microseconds (UTC)
     observed_at     TEXT NOT NULL,                       -- same, ISO-8601 UTC

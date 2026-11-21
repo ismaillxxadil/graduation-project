@@ -19,7 +19,13 @@ MAC_RE = re.compile(r"^[0-9a-f]{2}(:[0-9a-f]{2}){5}$")
 MDNS_ADDRS = {ipaddress.ip_address("224.0.0.251"), ipaddress.ip_address("ff02::fb")}
 LIMITED_BROADCAST = ipaddress.ip_address("255.255.255.255")
 
-EVENT_TYPES = {"conn": "network_connection", "dhcp": "dhcp_observation"}
+EVENT_TYPES = {
+    "conn": "network_connection",
+    "dhcp": "dhcp_observation",
+    "software": "software_observation",
+}
+
+SOFTWARE_VERSION_KEYS = ("major", "minor", "minor2", "minor3", "addl")
 
 _MISSING = object()
 
@@ -100,6 +106,30 @@ def _str(v):
     if not isinstance(v, str) or not v:
         return None, "must be a non-empty string"
     return v, None
+
+
+def _software_version(v):
+    """Validate and copy Zeek's Software::Version record."""
+    if not isinstance(v, dict):
+        return None, "must be an object"
+
+    allowed = set(SOFTWARE_VERSION_KEYS)
+    unknown = sorted(set(v) - allowed)
+    if unknown:
+        return None, f"unknown version field(s): {', '.join(unknown)}"
+
+    out = {}
+    for key in SOFTWARE_VERSION_KEYS:
+        if key not in v or v[key] is None:
+            continue
+        if key == "addl":
+            value, why = _str(v[key])
+        else:
+            value, why = _int_range(v[key], 0, 2**63 - 1)
+        if why:
+            return None, f"{key}: {why}"
+        out[key] = value
+    return out, None
 
 
 def _str_list(v):
@@ -281,7 +311,46 @@ def normalize_dhcp(rec: dict) -> Normalized:
     return out
 
 
-NORMALIZERS = {"conn": normalize_conn, "dhcp": normalize_dhcp}
+# ---------- software.log ----------
+
+def normalize_software(rec: dict) -> Normalized:
+    """Normalize Zeek Software::Info without inventing missing evidence."""
+    out = Normalized(EVENT_TYPES["software"], None)
+    f = _Fields(rec, out)
+
+    out.observed_at_us = f.required("ts", _ts_us)
+    host = f.required("host", _ip)
+    host_port = f.strict_optional("host_p", _int_range, 0, 65535)
+    software_type = f.strict_optional("software_type", _str)
+    name = f.strict_optional("name", _str)
+    flattened_version = {
+        key: rec[f"version.{key}"]
+        for key in SOFTWARE_VERSION_KEYS
+        if f"version.{key}" in rec
+    }
+    version_value = rec["version"] if "version" in rec else flattened_version or _MISSING
+    if version_value is _MISSING or version_value is None:
+        version = None
+    else:
+        version, why = _software_version(version_value)
+        if why:
+            out.problems["version"] = why
+    unparsed_version = f.strict_optional("unparsed_version", _str)
+
+    out.data = {
+        "host_ip": _ipstr(host),
+        "host_port": host_port,
+        "software_type": software_type,
+        "software_name": name,
+        "version": version,
+        "unparsed_version": unparsed_version,
+    }
+    out.flags += address_flags(host, "host")
+    out.flags = sorted(set(out.flags))
+    return out
+
+
+NORMALIZERS = {"conn": normalize_conn, "dhcp": normalize_dhcp, "software": normalize_software}
 
 
 def normalize(log_type: str, rec: dict) -> Normalized:

@@ -25,4 +25,8 @@ if ls ./*.log >/dev/null 2>&1; then
     mv ./*.log "$dir"/
 fi
 
-zeek -i "$iface" LogAscii::use_json=T >zeek.out 2>&1 &
+# The policy scripts feed SSH banners and HTTP response headers into Zeek's
+# built-in software framework, which writes software.log alongside the base logs.
+zeek -i "$iface" LogAscii::use_json=T \
+    policy/protocols/ssh/software \
+    policy/protocols/http/software >zeek.out 2>&1 &

@@ -44,8 +44,8 @@ To see the same thing from the shell: `python3 -m logingest read --after 0 --lim
 | `event_id` | TEXT UNIQUE | `sha256(probe_id \| log_type \| raw_sha256)` |
 | `source_id` | TEXT | `probe1:conn`, or `probe1:conn:archive/<run>` for an archived file |
 | `probe_id` | TEXT | `probe1` (sw2) or `probe2` (sw1), from the config, never guessed |
-| `log_type` | TEXT | `conn` or `dhcp` |
-| `event_type` | TEXT | `network_connection` or `dhcp_observation` |
+| `log_type` | TEXT | `conn`, `dhcp`, or `software` |
+| `event_type` | TEXT | `network_connection`, `dhcp_observation`, or `software_observation` |
 | `schema_version` | INTEGER | `1` |
 | `observed_at_us` | INTEGER | Zeek `ts`, microseconds since 1970 (UTC), exact |
 | `observed_at` | TEXT | same time, `2026-11-19T18:58:24.123456Z` |
@@ -85,6 +85,21 @@ To see the same thing from the shell: `python3 -m logingest read --after 0 --lim
 | `message_types` | list of strings | in the order they were seen, e.g. `["DISCOVER","OFFER","REQUEST","ACK"]` |
 | `hostname`, `client_fqdn`, `domain` | string or null | the lab's BusyBox clients send no hostname |
 
+### `data_json` for `software_observation`
+
+This is a normalized Zeek `Software::Info` record. The software log does not
+carry a connection UID, so `zeek_uid` is null for this observation type. The
+source probe and source log remain in the observation envelope and provenance.
+
+| Field | Type | Notes |
+|---|---|---|
+| `host_ip` | string | canonical IP address where Zeek observed the software |
+| `host_port` | int or null | service port when Zeek supplied one; often absent for client software |
+| `software_type` | string or null | Zeek role, such as `SERVER`, `CLIENT`, `APPSERVER`, or `UNKNOWN` |
+| `software_name` | string or null | Zeek's parsed software name; never inferred by Module 4 |
+| `version` | object or null | only Zeek-provided `major`, `minor`, `minor2`, `minor3`, and `addl` components |
+| `unparsed_version` | string or null | original version/banner string from Zeek |
+
 ## Quality flags
 
 Module 4 flags noise but never drops it. Module 5 decides what to ignore.
@@ -97,6 +112,7 @@ Module 4 flags noise but never drops it. Module 5 decides what to ignore.
 | `src_/dst_unspecified` | `0.0.0.0`, `::` (e.g. a DHCP client before it has an IP) |
 | `dst_limited_broadcast` | `255.255.255.255` |
 | `src_/dst_loopback` | |
+| `host_multicast`, `host_limited_broadcast`, `host_unspecified`, `host_loopback`, `host_link_local` | | address noise flags for software observations |
 | `no_reply` | `conn_state = S0` (no answer seen) |
 | `partial` | `conn_state = OTH` or `^` in history (Zeek saw only part of it) |
 | `missed_bytes` | Zeek missed some bytes |
@@ -118,7 +134,8 @@ Bad lines are kept here with the reason, never silently dropped.
 | `validate` / `contract_violation` | safety net: a required output field ended up empty |
 
 Required fields: **conn** needs `ts`, `uid`, `id.orig_h`, `id.orig_p`, `id.resp_h`, `id.resp_p`
-and `proto`. **dhcp** needs `ts`, `uids` and `msg_types`.
+and `proto`. **dhcp** needs `ts`, `uids` and `msg_types`. **software** needs `ts` and `host`;
+the version, name, role, and host port are optional because Zeek may not provide them.
 
 ## Changing the contract
 

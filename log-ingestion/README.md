@@ -1,11 +1,11 @@
 # Module 4: Zeek log ingestion
 
-Module 4 reads the Zeek logs from both probes (`conn.log`, `dhcp.log`), checks
+Module 4 reads the Zeek logs from both probes (`conn.log`, `dhcp.log`, `software.log`), checks
 and normalizes every line, and stores it in SQLite. Module 5 then reads the new rows.
 
 ```
-network/probe-logs/  conn.log dhcp.log  ─┐
-network/probe2-logs/ conn.log dhcp.log  ─┤   every 1 s
+network/probe-logs/  conn.log dhcp.log software.log  ─┐
+network/probe2-logs/ conn.log dhcp.log software.log  ─┤   every 1 s
    (+ archive/<run>/ copies)             │
                                          ▼
   read new full lines → parse → normalize → validate → event_id
@@ -51,7 +51,7 @@ Use another config: `python3 -m logingest -c my.toml run`, or set `LOGINGEST_CON
 ## Test it
 
 ```bash
-python3 -m unittest discover -s tests      # 29 tests, about 10 s, no lab needed
+python3 -m unittest discover -s tests      # 35 tests, about 10 s, no lab needed
 ```
 
 The tests use real lines from both probes (`tests/fixtures/`). They cover bad JSON,
@@ -86,7 +86,7 @@ time the lab is deployed (`bash start-lab.sh`).
 
 ## Not in this version
 
-- Only `conn` and `dhcp` are ingested. Adding a log type means adding one
+- `conn`, `dhcp`, and `software` are ingested. Adding another log type means adding one
   `normalize_<type>` function, its required fields in `validate.py`, and a config entry.
 - Matching against the Module 2 traffic-generator ledger is a separate step (plan step 8).
   It reads both files from outside and is not built into Module 4, so the modules stay independent.

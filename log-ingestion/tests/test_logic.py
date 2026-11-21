@@ -23,6 +23,19 @@ HTTP = (b'{"ts":1795115970.014435,"uid":"CoY6kG2XgAjIVXJa39","id.orig_h":"10.10.
         b'"orig_bytes":93,"resp_bytes":431,"conn_state":"SF","local_orig":true,"local_resp":true,"missed_bytes":0,'
         b'"history":"ShADadFf","orig_pkts":7,"orig_ip_bytes":465,"resp_pkts":5,"resp_ip_bytes":699}')
 
+SOFTWARE = (b'{"ts":1795115970.014435,"host":"10.10.35.10","host_p":22,'
+            b'"software_type":"SERVER","name":"OpenSSH",'
+            b'"version":{"major":9,"minor":9,"addl":"p1"},'
+            b'"unparsed_version":"OpenSSH_9.9p1 Alpine"}')
+NGINX_FLATTENED_SOFTWARE = (b'{"ts":1795282795.723652,"host":"10.10.20.20",'
+                             b'"host_p":80,"software_type":"HTTP::SERVER",'
+                             b'"name":"nginx","version.major":1,"version.minor":30,'
+                             b'"version.minor2":7,"unparsed_version":"nginx/1.30.7"}')
+OPENSSH_FLATTENED_SOFTWARE = (b'{"ts":1795282796.37302,"host":"10.10.35.10",'
+                               b'"host_p":22,"software_type":"SSH::SERVER",'
+                               b'"name":"OpenSSH","version.major":9,"version.minor":9,'
+                               b'"unparsed_version":"OpenSSH_9.9"}')
+
 
 def conn(**over):
     rec = json.loads(HTTP)
@@ -157,6 +170,53 @@ class NormalizeDhcp(unittest.TestCase):
             rec = dict(base, **{key: val})
             kind, row = run(json.dumps(rec).encode(), "dhcp")
             self.assertEqual((kind, row.get("error_code")), ("rejection", code), key)
+
+
+class NormalizeSoftware(unittest.TestCase):
+    def test_server_with_structured_version(self):
+        n = normalize("software", parse_line(SOFTWARE))
+        self.assertIsNone(validate("software", n))
+        self.assertEqual(n.event_type, "software_observation")
+        self.assertEqual(n.data["host_ip"], "10.10.35.10")
+        self.assertEqual(n.data["host_port"], 22)
+        self.assertEqual(n.data["software_name"], "OpenSSH")
+        self.assertEqual(n.data["version"], {"major": 9, "minor": 9, "addl": "p1"})
+        self.assertEqual(n.data["unparsed_version"], "OpenSSH_9.9p1 Alpine")
+
+    def test_actual_nginx_record_preserves_flattened_version(self):
+        n = normalize("software", parse_line(NGINX_FLATTENED_SOFTWARE))
+        self.assertIsNone(validate("software", n))
+        self.assertEqual(n.data["version"], {"major": 1, "minor": 30, "minor2": 7})
+        self.assertEqual(n.data["unparsed_version"], "nginx/1.30.7")
+
+    def test_actual_openssh_record_preserves_flattened_version(self):
+        n = normalize("software", parse_line(OPENSSH_FLATTENED_SOFTWARE))
+        self.assertIsNone(validate("software", n))
+        self.assertEqual(n.data["version"], {"major": 9, "minor": 9})
+        self.assertEqual(n.data["unparsed_version"], "OpenSSH_9.9")
+
+    def test_missing_version_and_host_port_are_allowed(self):
+        rec = json.loads(SOFTWARE)
+        rec.pop("host_p")
+        rec.pop("version")
+        n = normalize("software", parse_line(json.dumps(rec).encode()))
+        self.assertIsNone(validate("software", n))
+        self.assertIsNone(n.data["host_port"])
+        self.assertIsNone(n.data["version"])
+
+    def test_missing_host_is_rejected(self):
+        rec = json.loads(SOFTWARE)
+        rec.pop("host")
+        kind, row = run(json.dumps(rec).encode(), "software")
+        self.assertEqual((kind, row["error_code"]), ("rejection", "missing_field"))
+        self.assertIn("host", json.loads(row["error_details_json"]))
+
+    def test_invalid_version_is_rejected(self):
+        rec = json.loads(SOFTWARE)
+        rec["version"] = {"major": "nine"}
+        kind, row = run(json.dumps(rec).encode(), "software")
+        self.assertEqual((kind, row["error_code"]), ("rejection", "invalid_field"))
+        self.assertIn("version", json.loads(row["error_details_json"]))
 
 
 class Identity(unittest.TestCase):

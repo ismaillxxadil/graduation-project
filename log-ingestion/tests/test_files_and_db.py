@@ -1,5 +1,6 @@
 """Reader + SQLite + full-loop tests (temporary folders only, no lab needed)."""
 
+import json
 import os
 import shutil
 import signal
@@ -27,6 +28,12 @@ def L(i, uid=None):
     uid = uid or f"Cuid{i:06d}"
     return (f'{{"ts":{1795115970 + i}.5,"uid":"{uid}","id.orig_h":"10.10.10.{i % 250 + 1}","id.orig_p":{40000 + i % 20000},'
             f'"id.resp_h":"10.10.20.20","id.resp_p":80,"proto":"tcp","conn_state":"SF","history":"ShADadFf"}}\n').encode()
+
+
+def S(i=1):
+    return (f'{{"ts":{1795115970 + i}.5,"host":"10.10.35.10","host_p":22,'
+            f'"software_type":"SERVER","name":"OpenSSH",'
+            f'"version":{{"major":9,"minor":9}},"unparsed_version":"OpenSSH_9.9p1"}}\n').encode()
 
 
 class Tmp(unittest.TestCase):
@@ -167,6 +174,29 @@ class FullLoop(Tmp):
                                "AND dst_ip='10.10.20.20' AND json_extract(data_json,'$.src_port')=38180").fetchall()
         self.assertEqual(sorted(r[0] for r in rows), ["probe1", "probe2"])
 
+    def test_two_probes_same_software_are_two_observations(self):
+        cfg, ing = self.make(probes=("probe1", "probe2"), types=("software",))
+        for p in ("probe1", "probe2"):
+            (self.dir / p / "software.log").write_bytes(S())
+        c = ing.run_once()
+        self.assertEqual((c.inserted, c.rejected), (2, 0))
+        rows = ing.con.execute("SELECT probe_id, event_type, data_json FROM observations "
+                               "WHERE log_type='software' ORDER BY probe_id").fetchall()
+        self.assertEqual([r[0] for r in rows], ["probe1", "probe2"])
+        self.assertEqual([r[1] for r in rows], ["software_observation", "software_observation"])
+        self.assertEqual([json.loads(r[2])["software_name"] for r in rows], ["OpenSSH", "OpenSSH"])
+
+    def test_software_is_delivered_through_read_cursor(self):
+        cfg, ing = self.make(types=("software",))
+        cfg.sources[0].path.write_bytes(S())
+        self.assertEqual((ing.run_once().inserted, self.count(ing)), (1, 1))
+        batch = store.read_batch(ing.con, 0, limit=1)
+        self.assertEqual(batch[0]["event_type"], "software_observation")
+        self.assertEqual(batch[0]["data"]["host_ip"], "10.10.35.10")
+        store.save_cursor(ing.con, "module5", batch[-1]["sequence"], "now")
+        self.assertEqual(store.get_cursor(ing.con, "module5"), batch[-1]["sequence"])
+        self.assertEqual(store.read_batch(ing.con, batch[-1]["sequence"], limit=1), [])
+
     def test_zeek_restart_with_archive_loses_nothing(self):
         cfg, ing = self.make()
         live = cfg.sources[0].path
@@ -221,7 +251,8 @@ class ConfigFile(Tmp):
     def test_shipped_config_loads(self):
         cfg = load_config(ROOT / "config.toml")
         self.assertEqual([s.source_id for s in cfg.sources],
-                         ["probe1:conn", "probe1:dhcp", "probe2:conn", "probe2:dhcp"])
+                         ["probe1:conn", "probe1:dhcp", "probe1:software",
+                          "probe2:conn", "probe2:dhcp", "probe2:software"])
 
 
 if __name__ == "__main__":
